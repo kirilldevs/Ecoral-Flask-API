@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h2, h3 { color: #333; }
+        pre { background-color: #f4f4f4; padding: 10px; }
+        code { color: #D6336C; }
+    </style>
+</head>
+<body>
+    <h2>API Documentation: Analyze Social Media Posts</h2>
+    <h3>Endpoint: /analyze-posts</h3>
+    <p><strong>Method:</strong> POST</p>
+    <p><strong>Description:</strong> This endpoint analyzes social media posts related to diving and marine life, extracting information such as animals, environment, relevance to diving, location, number of people, and time of day from both text and images.</p>
+    <h3>Input</h3>
+    <p><strong>Content-Type:</strong> application/json</p>
+    <p><strong>Body:</strong></p>
+    <pre><code>{
+  "arr": [
+    {
+      "text": "Example post text about diving",
+      "image": "URL to an image related to the post"
+    }
+  ]
+}</code></pre>
+    <h3>Success Response</h3>
+    <pre><code>{
+  "data": [
+    {
+      "animals": "Detected animals",
+      "environment": "Detected environment",
+      "isAboutDiving": true or false,
+      "location": "Detected location",
+      "number of people": "Detected number of people or null",
+      "time of the day": "Detected time of the day"
+    }
+  ],
+  "message": "Data processed",
+  "status": "success"
+}</code></pre>
+    <h3>Error Response</h3>
+    <p><strong>Invalid Input (400 BAD REQUEST):</strong></p>
+    <pre><code>{
+  "message": "Invalid input format",
+  "status": "error"
+}</code></pre>
+    <p><strong>Processing Error (500 INTERNAL SERVER ERROR):</strong></p>
+    <pre><code>{
+  "message": "Error processing data",
+  "status": "error"
+}</code></pre>
+    <h3>Sample Call</h3>
+    <pre><code>curl -X POST https://api.yourdomain.com/v1/analyze-posts      -H "Content-Type: application/json"      -d '{"arr":[{"text":"Example text","image":"Image URL"}]}'</code></pre>
+    <p><strong>Notes:</strong></p>
+    <p>Text analysis is performed by the Gemini NLP model. Image analysis is conducted using a custom-built neural network model.</p>
+</body>
+</html>

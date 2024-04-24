@@ -1,0 +1,86 @@
+<!-- templates/upload.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Form</title>
+    <link rel="stylesheet" href="./../static/css/style.css">
+</head>
+
+<body>
+    <header>
+        <div class="navbar">
+            <div class="navbar-content">
+                <div class="navbar-logo">
+                    <img src="" alt="Logo"> <!-- Adjust path and size as needed -->
+                </div>
+                <div class="navbar-links">
+                    <button onclick="location.href='login.html'">Log In</button>
+                    <button onclick="location.href='signup.html'">Sign Up</button>
+                    <button onclick="location.href='api.html'">API</button>
+                    <button onclick="location.href='docs.html'">Docs</button>
+                    <button onclick="location.href='contact.html'">Contact</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+
+    <div class="form-container upload_div">
+        <h2 style="color: #333;">Upload</h2>
+        <form id="uploadForm" method="post" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div class="form-group fill_area">
+                {{ form.text_input.label }} {{ form.text_input(class_='form-control') }}<br>
+            </div>
+            <div class="form-group fill_area">
+                {{ form.image.label }} {{ form.image(class_='form-control') }}<br>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Submit" class="form-control">
+            </div>
+        </form>
+        <pre id="jsonResult"
+            style="background-color: #eeeeee; border: 1px solid #cccccc; padding: 10px; border-radius: 5px; overflow: auto;">{{answer}}
+        </pre>
+        <div class="form-group">
+            <button id="copyButton">Copy</button>
+        </div>
+        
+    </div>
+
+    <script>
+        document.getElementById('copyButton').addEventListener('click', function() {
+            // Create a range and selection to select the text of the <pre> element
+            var range = document.createRange();
+            var selection = window.getSelection();
+            var preElement = document.getElementById('jsonResult');
+    
+            // Clear any current selections
+            selection.removeAllRanges();
+    
+            // Select the text content of the <pre> element
+            range.selectNodeContents(preElement);
+            selection.addRange(range);
+    
+            try {
+                // Execute the copy command
+                var successful = document.execCommand('copy');
+                var msg = successful ? 'successful' : 'unsuccessful';
+                console.log('Copy text command was ' + msg);
+            } catch (err) {
+                console.log('Oops, unable to copy', err);
+            }
+    
+            // Clear the selection
+            selection.removeAllRanges();
+        });
+    </script>
+    
+</body>
+
+
+
+</html>

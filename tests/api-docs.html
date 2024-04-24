@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Documentation</title>
+
+    <style>
+        body {
+            font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif ,Arial, sans-serif;
+            color: #333;
+            line-height: 1.3;
+            font-size: 18px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            /* padding: 20px; */
+        }
+
+        h1,
+        h2 {
+            color: #0056b3;
+            margin-top: 30px;
+        }
+
+        h4 {
+            margin-bottom: 0;
+        }
+
+        code {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            padding: 10px 10px;
+            border-radius: 5px;
+            display: block;
+            margin: 10px 0;
+            font-size: 14px;
+            overflow: auto;
+            line-height: 1.8;
+        }
+
+        .code-error {
+            background: #f9f9f9;
+            border-left: 3px solid #b30000;
+            margin: 20px 0;
+            padding: 10px;
+            
+        }
+
+        .code-example {
+            background: #ddedff;
+            font-weight: bold;
+
+        }
+
+        .more-lines {
+            line-height: 1.8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="navigation">
+            <button onclick="scrollToSection('overview')">Overview</button>
+            <button onclick="scrollToSection('resources')">Resources</button>
+            <button onclick="scrollToSection('getting-started')">Getting Started</button>
+            <button onclick="scrollToSection('request-methods')">Request Methods and Endpoints</button>
+            <button onclick="scrollToSection('sample-call')">Sample Call</button>
+            <button onclick="scrollToSection('faqs')">FAQs</button>
+            <button onclick="scrollToSection('bugs-and-errors')">Bugs and Errors</button>
+        </div>
+        
+        <h1>API Documentation</h1>
+        <p>
+            This document provides an overview and examples for using the API
+            endpoints.
+        </p>
+
+        <h2>Overview</h2>
+        <p class="more-lines">
+            The upload endpoint allowed for the uploading of text and images for
+            processing. <br>
+            It endpoint analyzes social media posts related to diving and marine life, extracting information such as
+            animals, environment, relevance to diving, location, number of people, and time of day from both text and
+            images. <br>
+
+            Text analysis is performed by the Gemini NLP model. Image analysis is conducted using a custom-built neural
+            network model.
+        </p>
+
+        <h2>Resources</h2>
+        <p>
+            The upload endpoint allows for the uploading of text and images for
+            processing.
+        </p>
+
+        <h2>Getting Started</h2>
+
+        <h4>Base URL</h4>
+        <p>
+            https://ecoral.org/api/upload
+        </p>
+        <h4>Authentication and Authorization</h4>
+        <p>
+            Must register and get key token or access the API via Ecoral.org website
+        </p>
+        <h4>Rate Limits</h4>
+        <p>
+            Response take time, limited by the Gemini API so max 60 calls per
+            minute.
+        </p>
+
+        <h2>Request methods and endpoints</h2>
+
+        <h3>Body:</h3>
+        <p>
+            <b>Method: </b>POST <br />
+        </p>
+        <p class="more-lines">
+            <b>Content Type:</b> JSON Object with a "arr", Keys in "arr": "text" and "image".
+            Only Image or Only Text are accepted as well <br />
+        </p>
+        <p>
+            <b>Base Structure (Text and Image):</b>
+        </p>
+        <pre><code>{
+    "arr": [
+    {
+      "text": "Example post text about diving",
+      "image": "URL to an image related to the post"
+    }
+  ]
+}</code></pre>
+        <b>Only Text:</b>
+        <pre><code>{
+  "arr": [
+    {
+      "text": "Example post text about diving",
+    }
+  ]
+}</code></pre>
+        <b>Only Image:</b>
+        <pre><code>{
+  "arr": [
+    {
+      "image": "URL to an image related to the post"
+    }
+  ]
+}</code></pre>
+        <h3>Success Response</h3>
+        <p>The response will be a JSON object containing the processed data.</p>
+        <pre><code>{
+    "data": [
+    {
+      "animals": "Detected animals",
+      "environment": "Detected environment",
+      "isAboutDiving": true or false,
+      "location": "Detected location",
+      "number of people": "Detected number of people or null",
+      "time of the day": "Detected time of the day"
+    }
+  ],
+    "message": "Data processed",
+    "status": "success"
+}</code></pre>
+        <h3>Error Response</h3>
+        <p><strong>Invalid Input (400 BAD REQUEST):</strong></p>
+        <div class="code-error">
+
+
+            <pre><code>{
+  "message": "Invalid input format",
+  "status": "error"
+}</code></pre>
+        </div> or when empty array ("arr")
+        <p><strong>Invalid Input (400 BAD REQUEST):</strong></p>
+        <div class="code-error">
+
+
+            <pre><code>{
+  "message": "Data is empty",
+  "status": "error"
+}</code></pre>
+        </div>
+
+        <p><strong>Processing Error (500 INTERNAL SERVER ERROR):</strong></p>
+        <div class="code-error">
+            <pre><code>{
+  "message": "Error processing data",
+  "status": "error"
+}</code></pre>
+        </div>
+
+
+        <h2>Sample Call</h2>
+
+        <p><b>Code Example - Python:</b></p>
+        <pre><code class="code-example">import requests
+
+    url = "https://ecoral.org/api/upload"
+
+    data = {
+        "arr" : {
+          "text": "Have I mentioned before how much I love the north shore in Eilat? Snorkeling this morning, <br>                   over the amphibious vessels 19.1.24",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Octopus2.jpg/800px-Octopus2.jpg"
+        }
+    }
+
+    response = requests.post(url, json=data)
+
+    print(response.text)
+</code></pre>
+<p><b>Data Example:</b></p>
+        <pre>
+<code>{
+  "arr": [
+    {
+      "text": "Have I mentioned before how much I love the north shore in Eilat? Snorkeling this morning,<br>       over the amphibious vessels 19.1.24",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Octopus2.jpg/800px-Octopus2.jpg"
+    }
+  ]
+}
+</code>
+</pre>
+        <p><b>Success Response:</b></p>
+        <pre><code>{
+    "data": [
+        {
+            "animals": "octopus",
+            "environment": "sandy bottom",
+            "isAboutDiving": true,
+            "location": "Eilat North beach",
+            "number of people": null,
+            "time of the day": "sunrise"
+        }
+    ],
+    "message": "Data processed",
+    "status": "success"
+}
+</code></pre>
+
+<h2>Frequently Asked Questions (FAQs)</h2>
+<div class="faq-item">
+    <h4>What types of data can I upload?</h4>
+    <p>You can upload social media posts that include text, images, or both. The content should be related to diving and marine life.</p>
+</div>
+<div class="faq-item">
+    <h4>How do I authenticate my API requests?</h4>
+    <p>Authentication is required for all API requests. You must register on Ecoral.org to receive a key token, which should be included in your request headers.</p>
+</div>
+<div class="faq-item">
+    <h4>Is there a limit to how many requests I can make?</h4>
+    <p>Yes, due to limitations by the Gemini API, there is a maximum of 60 calls per minute. Please plan your requests accordingly to avoid exceeding this limit.</p>
+</div>
+<div class="faq-item">
+    <h4>What happens if I send an invalid request?</h4>
+    <p>If the API receives an invalid request, you will receive a 400 BAD REQUEST error response. This usually happens if the input format is incorrect or the data array is empty.</p>
+</div>
+<div class="faq-item">
+    <h4>How do I report a bug or error?</h4>
+    <p>If you encounter any issues, please report them to our support team via email at <a href="mailto:support@ecoral.org">support@ecoral.org</a>. Include details of the issue, any error messages, and the request that caused the error.</p>
+</div>
+
+
+<h2>Bugs and Errors</h2>
+<p class="more-lines">
+    We strive for excellence and reliability in our API services, but understand that bugs and errors can occur. If you encounter any issues or unexpected behavior while using our API, please do not hesitate to report them to us. Your feedback is invaluable for improving the quality and performance of our services. Reports can be submitted through our support email at <a href="mailto:support@ecoral.org">support@ecoral.org</a> or via the contact form on our website. <br> When reporting an issue, please include as much detail as possible, such as the request you made, the response you received, and any error messages. This information will help our team diagnose and address the issue promptly.
+</p>
+
+<script>
+    function scrollToSection(sectionId) {
+        var element = document.getElementById(sectionId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+    </script>
+    
+</body>
+
+</html>

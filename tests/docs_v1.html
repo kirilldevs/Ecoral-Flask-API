@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.2;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            /* padding: 20px; */
+        }
+
+        h1,
+        h2 {
+            color: #0056b3;
+            /* margin-top: 20px; */
+        }
+
+        code {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            padding: 10px 10px;
+            border-radius: 5px;
+            display: block;
+            margin: 10px 0;
+        }
+
+        .code-example {
+            background: #f9f9f9;
+            border-left: 3px solid #0056b3;
+            margin: 20px 0;
+            padding: 10px;
+            overflow: auto;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="container">
+        <h1>API Documentation</h1>
+        <p>This document provides an overview and examples for using the API endpoints.</p>
+
+        <h2>Resources</h2>
+        <p>The upload endpoint allows for the uploading of text and images for processing.</p>
+
+        <h2>Upload Endpoint</h2>
+        <p>The upload endpoint allows for the uploading of text and images for processing.</p>
+
+        <h3>URL</h3>
+        <code>/api/v1/upload</code>
+
+        <h3>Method</h3>
+        <code>POST</code>
+
+        <h3>Content-Type</h3>
+        <code>application/json</code>
+
+        <h3>Body Parameters</h3>
+        <p>The request body must include a JSON object with a <code>"data"</code> key containing nested
+            <code>"text"</code> and <code>"image"</code> keys.
+        </p>
+
+        <div class="code-example">
+        <code>{
+        "data": {
+            "text": "Example text",
+            "image": "https://example.com/image.jpg"
+        }
+        }</code>
+        </div>
+
+        <h3>Response</h3>
+        <p>The response will be a JSON object containing the processed data.</p>
+
+        <div class="code-example">
+        <code>
+            {
+            "status": "success",
+            "message": "Data processed",
+            "text": "Example text",
+            "image": "https://example.com/image.jpg",
+            "answer": "Processed data"
+            }
+        </code>
+        </div>
+
+        <p>Ensure your requests are correctly formatted to receive the desired response.</p>
+    </div>
+</body>
+
+</html>

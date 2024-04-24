@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Text File</title>
+    <link rel="stylesheet" href="./../static/css/style.css">
+</head>
+<body>
+    <div class="form-container">
+        <form method="post" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.txt_file.label }}
+                {{ form.txt_file(class_='form-control') }}
+                {% if form.txt_file.errors %}
+                    <div class="errors">{{ form.txt_file.errors[0] }}</div>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form.submit(class_='submit-btn') }}
+            </div>
+        </form>
+    </div>
+</body>
+</html>
