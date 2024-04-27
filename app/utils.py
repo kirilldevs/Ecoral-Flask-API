@@ -14,6 +14,12 @@ from google.api_core.exceptions import InternalServerError
 from google.generativeai.types.generation_types import BlockedPromptException
 
 
+# # ------------- IMPORT VIRTUAL VARIABLES -------------
+from dotenv import dotenv_values
+config = dotenv_values(".env")
+GEMINI_KEY = config['GEMINI_KEY']
+genai.configure(api_key=GEMINI_KEY)
+
 # ------------- TEXT AND IMAGE ANALYZE - GEMINI -------------
 def analyze_data_gemini(dive_text, img):
     print("IN GEMINI")
@@ -59,24 +65,25 @@ def analyze_data_gemini(dive_text, img):
             return json_data 
         
     except BlockedPromptException as e:
-            print(f"promt error: {e.msg}, at position {e.pos}")
-            json_data = json.loads('{"no data": "Some error occured"}')
-            return json_data 
+        print(f"promt error: {e.msg}, at position {e.pos}")
+        json_data = json.loads('{"no data": "Some error occured"}')
+        return json_data 
 
     except ValueError as e:
         print("VALUE ERROR")
+        json_data = json.loads('{"no data": "Some error occured"}')
+        return json_data 
 
 
 # ------------- CONVERT IMAGE URL TO IMAGE FILE -------------
 def url_to_image(url):
     response = requests.get(url) 
     if response.status_code == 200:
-        # Open the image using BytesIO which allows it to be read by PIL
         img_bytes = BytesIO(response.content)
         img = Image.open(img_bytes).convert('RGB')
         return img
-    # else:
-    #     raise Exception(f"Failed to fetch image from URL. Status code: {response.status_code}")
+    else:
+        raise Exception(f"Failed to fetch image from URL. Status code: {response.status_code}")
    
 def process_json(data):
         print("IN PROCESS JSON")
@@ -95,9 +102,7 @@ def process_json(data):
             print('*************************************************')
             print(post)
             print('*************************************************')
-            # if not isinstance(post, dict):
-            #     print(f"Expected a dictionary, but got: {type(post)}")
-            #     continue  # Skip this iteration and proceed with the next item
+ 
             text = post.get('text', "")
             image_url = post.get('image', 'No Image')
             img = 'No Image'
@@ -114,7 +119,7 @@ def process_json(data):
                 answer["video"] = post.get('video', 'no video in this post')
                 results.append(answer)
                 successful_posts += 1
-            except InternalServerError as e:
+            except Exception as e:
                 return jsonify({'status': 'partial_success', 'message': 'Some data fragments were not retrieved due to internal server errors.', 'successfulData': results, 'errors': arr[successful_posts:], 'nextSteps': 'try again in 60 seconds', 'results':successful_posts/number_of_posts}), 206
    
         return jsonify({'status': 'success', 'message': 'Data processed', 'data': results, 'number of posts': successful_posts}), 200
@@ -122,7 +127,7 @@ def process_json(data):
 def extract_data_from_HTML(txt):
     print("IN EXTRACT HTML")
 
-    soup = BeautifulSoup(txt, 'lxml')
+    soup = BeautifulSoup(txt, 'html.parser')
 
     feed_divs = soup.find_all('div', role="feed")
 
