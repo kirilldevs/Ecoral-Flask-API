@@ -20,6 +20,7 @@ config = dotenv_values(".env")
 GEMINI_KEY = config['GEMINI_KEY']
 genai.configure(api_key=GEMINI_KEY)
 
+
 # ------------- TEXT AND IMAGE ANALYZE - GEMINI -------------
 def analyze_data_gemini(dive_text, img):
     print("IN GEMINI")
@@ -52,13 +53,10 @@ def analyze_data_gemini(dive_text, img):
 
         cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
 
-        print('-----------------------------')
-        print('CLEANED TEXT: ', cleaned_text)
-        print('-----------------------------')
-
         try:
             json_data = json.loads(cleaned_text)
             return json_data
+        
         except json.JSONDecodeError as e:
             print(f"JSON decode error: {e.msg}, at position {e.pos}")
             json_data = json.loads('{"no data": "Some error occured"}')
@@ -68,9 +66,9 @@ def analyze_data_gemini(dive_text, img):
         print(f"promt error: {e.msg}, at position {e.pos}")
         json_data = json.loads('{"no data": "Some error occured"}')
         return json_data 
-
-    except ValueError as e:
-        print("VALUE ERROR")
+    
+    except Exception as e:
+        print(f"some error: {str(e)}")
         json_data = json.loads('{"no data": "Some error occured"}')
         return json_data 
 
@@ -88,6 +86,7 @@ def url_to_image(url):
 def process_json(data):
         print("IN PROCESS JSON")
         arr = data.get('arr', [])
+        arr_error_posts = []
         number_of_posts = len(arr)
         successful_posts = 0
         results = []
@@ -104,25 +103,38 @@ def process_json(data):
             print('*************************************************')
  
             text = post.get('text', "")
-            image_url = post.get('image', 'No Image')
-            img = 'No Image'
+            image_url = post.get('image', False)
+            video = post.get('video', False)
 
-            if image_url != 'No Image':
-                try:
-                    img = url_to_image(image_url)
+            if (image_url or video):
+                if (image_url):
+                    try:
+                        img = url_to_image(image_url)
+                    except Exception as e:
+                        print(f"Error getting image: {e}")
+                else:
+                    img = None
+
+                try:        
+                    answer = analyze_data_gemini(text, img)
+                    successful_posts += 1
+                    results.append(answer)
+
                 except Exception as e:
-                    print(f"Error getting image: {e}")
+                    print(f"Error processing data: {e}")
+                    arr_error_posts.append(post)
+                    answer = {}
 
-            try:        
-                answer = analyze_data_gemini(text, img)
                 answer["url"] = post.get('url', 'url not found')
                 answer["video"] = post.get('video', 'no video in this post')
-                results.append(answer)
-                successful_posts += 1
-            except Exception as e:
-                return jsonify({'status': 'partial_success', 'message': 'Some data fragments were not retrieved due to internal server errors.', 'successfulData': results, 'errors': arr[successful_posts:], 'nextSteps': 'try again in 60 seconds', 'results':successful_posts/number_of_posts}), 206
-   
-        return jsonify({'status': 'success', 'message': 'Data processed', 'data': results, 'number of posts': successful_posts}), 200
+                
+                
+        if (successful_posts/number_of_posts == 1):
+            return jsonify({'status': 'success', 'message': 'Data processed', 'data': results, 'number of posts': successful_posts}), 200
+        elif(successful_posts == 0):
+            return jsonify({'status': 'Partial_success', 'message': 'The data wasnt analyzed, you can check the posts manually.', 'Unanalyzed Posts': arr_error_posts, 'nextSteps': 'Try again in 60 seconds or Contact the admin', 'results':successful_posts/number_of_posts}), 206
+        else:
+            return jsonify({'status': 'partial_success', 'message': 'Some data fragments were not retrieved due to internal server errors.', 'successfulData': results, 'Unanalyzed Posts': arr_error_posts, 'nextSteps': 'try again in 60 seconds', 'results':successful_posts/number_of_posts}), 206
 
 def extract_data_from_HTML(txt):
     print("IN EXTRACT HTML")
@@ -174,45 +186,5 @@ def extract_data_from_HTML(txt):
         file.write(json.dumps(collected_data, ensure_ascii=False))
             
     response, status_code = process_json({"arr": collected_data})
-    # print("COLLECTED DATA:", collected_data)
     print(response)
     return response, status_code
-
-
-    # V2 - one image per post
-
-    # for feed_div in feed_divs:
-        
-    #     found_divs = feed_div.find_all('div', class_=lambda class_: class_ and all(c in class_.split() for c in initial_classes))
-
-    #     for div in found_divs:
-    #         entry = {}
-            
-    #         nested_div_1 = div.find('div', class_=lambda class_: class_ and all(c in class_.split() for c in nested_classes_for_text))
-    #         if nested_div_1 and nested_div_1.text:
-    #             entry['text'] = nested_div_1.text
-            
-    #         nested_img = div.find('img', class_=lambda class_: class_ and all(c in class_.split() for c in nested_classes_for_images))
-    #         if not nested_img:
-    #             nested_img = div.find('img', class_=lambda class_: class_ and all(c in class_.split() for c in alternate_classes_for_images))
-            
-    #         if nested_img and nested_img.get('src'):
-    #             entry['image'] = nested_img['src']
-            
-    #         nested_a_video = div.find('a', class_=lambda class_: class_ and all(c in class_.split() for c in nested_a_classes_for_videos))
-    #         if nested_a_video and nested_a_video.get('href'):
-    #             entry['video'] = nested_a_video['href']
-            
-    #         url_a_tag = div.find('a', class_=lambda class_: class_ and all(c in class_.split() for c in classes_a_for_url))
-
-    #         if url_a_tag:
-    #             entry['url'] = url_a_tag['href']
-
-    #         if entry:
-    #             collected_data.append(entry)
-
-    # response, status_code = process_json({"arr": collected_data})
-    # # print("COLLECTED DATA:", collected_data)
-    # print(response)
-    # return response, status_code
-
