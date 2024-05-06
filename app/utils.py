@@ -26,7 +26,9 @@ def analyze_data_gemini(dive_text, img):
     print("IN GEMINI")
     json_structure = '{"date": ,"time":, "diveSite": ,"objectGroup":, "specie":, "imageLocation":, "AR":}'
     json_not_usefull = '{"no data": "No usefull data"}'
+    json_no_images = '{"no data": "No images in this post"}'
     json_no_data = '{"no data": "The post is not about diving"}'
+    json_no_israelOrSales = '{"no data": "The post is not about diving in Israel region or advertisement"}'
     parameters_explanation_before = '''date - date of the dive,
         time - light/night,
         diveSite - site name,
@@ -38,7 +40,7 @@ def analyze_data_gemini(dive_text, img):
 
     parameters_explanation = parameters_explanation_before.replace('\n', ' ')
 
-    promt_instructions = f'return a json file in the next format: {json_structure}, explanation of each parameter: {parameters_explanation}. if some information is missing type "null", if all information is missing return {json_not_usefull}, if the text is not about diving return {json_no_data}. if there is a short text with date or location and an image of marine life, count it as about diving that occured in that time and place and analyze it as explained before.'
+    promt_instructions = f'return a json file in the next format: {json_structure}, explanation of each parameter: {parameters_explanation}. if some information is missing type "null", if all information is missing return {json_not_usefull}, if the text is not about diving at all return {json_no_data}, if there is a region in the text and it is not Israel or the text is advertisement return {json_no_israelOrSales}.'
     
     print("DIVE TEXT",dive_text)
 
@@ -48,8 +50,9 @@ def analyze_data_gemini(dive_text, img):
             response = model.generate_content([f'I am giving you a text and an image about diving, {promt_instructions} the text: {dive_text}', img], stream=True)
             response.resolve()
         else:
-            model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(f'I am giving you a text about diving, {promt_instructions} the text: {dive_text}')
+            # model = genai.GenerativeModel('gemini-pro')
+            # response = model.generate_content(f'I am giving you a text about diving, {promt_instructions} the text: {dive_text}')
+            response = json_no_images
 
         cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
 
@@ -99,7 +102,8 @@ def process_json(data):
 
         for post in arr:
             print('*************************************************')
-            print(post)
+            print("POST:", post)
+            print("IMAGE:", post['image'])
             print('*************************************************')
  
             text = post.get('text', "")
@@ -110,13 +114,17 @@ def process_json(data):
                 if (image_url):
                     try:
                         img = url_to_image(image_url)
+                        post['image'] = image_url
                     except Exception as e:
                         print(f"Error getting image: {e}")
+                        post['image'] = "Error getting image URL"
                 else:
                     img = None
 
                 try:        
                     answer = analyze_data_gemini(text, img)
+
+
                     successful_posts += 1
                     results.append(answer)
 
@@ -125,8 +133,15 @@ def process_json(data):
                     arr_error_posts.append(post)
                     answer = {}
 
-                answer["url"] = post.get('url', 'url not found')
-                answer["video"] = post.get('video', 'no video in this post')
+                answer["linkURL"] = post.get('url', 'url not found')
+                if(video):
+                    answer["video"] = post.get('video')
+                    answer["documentation"] = "v"
+                    
+                answer["image"] = post['image']
+                answer["media"] = "Facebook"
+                if post['image']!="Error getting image URL":
+                    answer["documentation"] = "p"
                 
                 
         if (successful_posts/number_of_posts == 1):
@@ -182,8 +197,8 @@ def extract_data_from_HTML(txt):
 
                     collected_data.append(entry)
 
-    with open('file.txt', 'w', encoding='utf-8') as file:
-        file.write(json.dumps(collected_data, ensure_ascii=False))
+    # with open('file.txt', 'w', encoding='utf-8') as file:
+    #     file.write(json.dumps(collected_data, ensure_ascii=False))
             
     response, status_code = process_json({"arr": collected_data})
     print(response)
