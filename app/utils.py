@@ -47,7 +47,7 @@ def analyze_data_gemini(dive_text, img):
 
     try:
         if isinstance(img, Image.Image):
-            model = genai.GenerativeModel('gemini-pro-vision')
+            model = genai.GenerativeModel('gemini-1.0-pro-vision')
             response = model.generate_content([f'I am giving you a text and an image about diving, {promt_instructions} the text: {dive_text}', img], stream=True)
             response.resolve()
         else:
