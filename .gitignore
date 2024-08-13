@@ -4,3 +4,4 @@ app/__pycache__/
 ecoEnv/
 tests/
 file.txt
+ecoralVGG16.weights.h5
