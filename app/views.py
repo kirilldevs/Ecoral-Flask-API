@@ -1,9 +1,13 @@
-from app.utils import analyze_data_gemini, process_json, extract_data_from_HTML
+from app.utils import analyze_data_gemini, process_json, extract_data_from_HTML, url_to_image, predict_image_class
+from app.utils import predict_top_5_classes
 from app import forms
 import json
+import numpy as np
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from PIL import Image
 
 # FLASK
-from flask import Flask, Blueprint, render_template, request, url_for, redirect, flash, send_from_directory, jsonify
+from flask import Flask, Blueprint, render_template, request, url_for, redirect, flash, send_from_directory, jsonify, current_app
 
 # IMAGES
 from PIL import Image
@@ -86,3 +90,56 @@ def api_html_analyze():
 
     else:
         return jsonify({'status': 'error', 'message': 'Use POST method to send JSON data'}), 405
+
+
+# @views.route('/api/predict', methods=['POST'])
+# def predict():
+#     print("IN PREDICT ROUTE")
+    
+#     image_url = request.form.get('image_url')
+
+#     if not image_url:
+#         return jsonify({"error": "No image URL provided"}), 400
+
+#     try:
+#         img, encoded_img = url_to_image(image_url)
+
+#         img = img.resize((224, 224))
+        
+#         img_array = img_to_array(img)
+#         img_array = np.expand_dims(img_array, axis=0)
+#         img_array = img_array / 255.0  # Normalize to [0, 1]
+
+#         model = current_app.config['MODEL']
+#         labels = current_app.config.get('LABELS')
+
+#         predictions = model.predict(img_array)
+#         top_prediction_idx = np.argmax(predictions[0])
+#         top_prediction_class = labels[top_prediction_idx]
+#         top_prediction_prob = predictions[0][top_prediction_idx]
+#         return jsonify({
+#             "top_prediction": {
+#                 "class": top_prediction_class,
+#                 "probability": round(float(top_prediction_prob), 2)
+#             }
+#         })
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+
+@views.route('/api/predict', methods=['POST'])
+def predict():
+    print("IN PREDICT ROUTE")
+    
+    image_url = request.form.get('image_url')
+
+    if not image_url:
+        return jsonify({"error": "No image URL provided"}), 400
+
+    result = predict_image_class(image_url)
+    
+    if "error" in result:
+        return jsonify(result), 500
+    
+    return jsonify(result)
