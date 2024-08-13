@@ -86,7 +86,7 @@ def api_html_analyze():
             response, status_code = extract_data_from_HTML(html)
             return response, status_code
         else:
-            return jsonify({'status': 'error', 'message': 'Request must be HTML'}), 400
+            return jsonify({'status': 'error', 'message': 'Request must be JSON'}), 400
 
     else:
         return jsonify({'status': 'error', 'message': 'Use POST method to send JSON data'}), 405

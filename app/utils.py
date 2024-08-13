@@ -1,7 +1,6 @@
 # IMAGES
 from PIL import Image
 from io import BytesIO
-import base64
 import requests
 import json
 from flask import jsonify
@@ -138,13 +137,7 @@ def url_to_image(url):
     if response.status_code == 200:
         img_bytes = BytesIO(response.content)
         img = Image.open(img_bytes).convert('RGB')
-
-        buffer = BytesIO()
-        img.save(buffer, format='JPEG')
-        image_bytes = buffer.getvalue()
-        encoded_image = base64.b64encode(image_bytes).decode('utf-8')
-        return img, encoded_image
-    
+        return img
     else:
         raise Exception(f"Failed to fetch image from URL. Status code: {response.status_code}")
    
@@ -155,7 +148,7 @@ def process_json(data):
         number_of_posts = len(arr)
         successful_posts = 0
         results = []
-        print("ARR:", arr)
+
         if not arr:
             return jsonify({'status': 'error', 'message': 'Data Is Empty'}), 400
         
@@ -171,13 +164,16 @@ def process_json(data):
             text = post.get('text', "")
             image_url = post.get('image', False)
             video = post.get('video', False)
-            encoded_img = False
 
             if (image_url or video):
                 if (image_url):
                     try:
+<<<<<<< HEAD
                         # img, encoded_img = url_to_image(image_url)
                         img, encoded_img = url_to_image(image_url)
+=======
+                        img = url_to_image(image_url)
+>>>>>>> parent of 724e210 (change linkURL to file and remove byte64)
                         post['image'] = image_url
                     except Exception as e:
                         print(f"Error getting image: {e}")
@@ -188,6 +184,7 @@ def process_json(data):
                 try:        
                     answer = analyze_data_gemini(text, img)
 
+
                     successful_posts += 1
                     results.append(answer)
 
@@ -196,8 +193,12 @@ def process_json(data):
                     arr_error_posts.append(post)
                     answer = {}
 
+<<<<<<< HEAD
                 answer["file"] = post.get('url', 'url not found')
                 # answer["encoded_img"] = encoded_img
+=======
+                answer["linkURL"] = post.get('url', 'url not found')
+>>>>>>> parent of 724e210 (change linkURL to file and remove byte64)
                 if(video):
                     answer["video"] = post.get('video')
                     answer["documentation"] = "v"
