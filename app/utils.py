@@ -5,6 +5,10 @@ import base64
 import requests
 import json
 from flask import jsonify
+from flask import current_app
+import numpy as np
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+
 
 # HTML
 from bs4 import BeautifulSoup
@@ -18,6 +22,10 @@ from google.generativeai.types.generation_types import BlockedPromptException
 # # ------------- IMPORT VIRTUAL VARIABLES -------------
 from dotenv import dotenv_values
 config = dotenv_values(".env")
+
+TEST = config['TEST']
+print(TEST)
+
 GEMINI_KEY = config['GEMINI_KEY']
 genai.configure(api_key=GEMINI_KEY)
 
@@ -28,7 +36,9 @@ def analyze_data_gemini(dive_text, img):
     json_structure = '{"date": ,"time":, "diveSite": ,"objectGroup":, "specie":, "imageLocation":, "AR":}'
     json_not_usefull = '{"no data": "No usefull data"}'
     json_no_images = '{"no data": "No images in this post"}'
+    json_no_images = '{"no data": "No images in this post"}'
     json_no_data = '{"no data": "The post is not about diving"}'
+    json_no_israelOrSales = '{"no data": "The post is not about diving in Israel region or advertisement"}'
     json_no_israelOrSales = '{"no data": "The post is not about diving in Israel region or advertisement"}'
     parameters_explanation_before = '''date - date of the dive,
         time - light/night,
@@ -47,15 +57,20 @@ def analyze_data_gemini(dive_text, img):
 
     try:
         if isinstance(img, Image.Image):
-            model = genai.GenerativeModel('gemini-1.0-pro-vision')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content([f'I am giving you a text and an image about diving, {promt_instructions} the text: {dive_text}', img], stream=True)
             response.resolve()
         else:
             # model = genai.GenerativeModel('gemini-pro')
             # response = model.generate_content(f'I am giving you a text about diving, {promt_instructions} the text: {dive_text}')
             response = json_no_images
+            # model = genai.GenerativeModel('gemini-pro')
+            # response = model.generate_content(f'I am giving you a text about diving, {promt_instructions} the text: {dive_text}')
+            response = json_no_images
 
         cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
+        print("\nCLEANED TEXT: \n")
+        print(cleaned_text)
 
         try:
             json_data = json.loads(cleaned_text)
@@ -63,23 +78,63 @@ def analyze_data_gemini(dive_text, img):
         
         except json.JSONDecodeError as e:
             print(f"JSON decode error: {e.msg}, at position {e.pos}")
-            json_data = json.loads('{"no data": "Some error occured"}')
+            json_data = json.loads('{"no data": "Some error occured 1"}')
             return json_data 
         
     except BlockedPromptException as e:
         print(f"promt error: {e.msg}, at position {e.pos}")
-        json_data = json.loads('{"no data": "Some error occured"}')
+        json_data = json.loads('{"no data": "Some error occured 2"}')
         return json_data 
     
     except Exception as e:
         print(f"some error: {str(e)}")
-        json_data = json.loads('{"no data": "Some error occured"}')
+        json_data = json.loads('{"no data": "Some error with GEMINI service"}')
         return json_data 
+
+# ------------- MODEL PREDICTIONS TOP 5-------------
+def predict_top_5_classes(image_path):
+    model = current_app.config['MODEL']
+    labels = current_app.config.get('LABELS')
+
+    img = load_img(image_path, target_size=(224, 224))
+    img_array = img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = img_array / 255.0
+
+    predictions = model.predict(img_array)
+    top_5_indices = np.argsort(predictions[0])[-5:][::-1]
+    top_5_classes = [(labels[i], predictions[0][i]) for i in top_5_indices]
+
+    return top_5_classes
+
+
+def predict_image_class(image_url):
+    try:
+        img, encoded_img = url_to_image(image_url)
+        img = img.resize((224, 224))
+
+        img_array = img_to_array(img)
+        img_array = np.expand_dims(img_array, axis=0)  #
+        img_array = img_array / 255.0 
+
+        model = current_app.config['MODEL']
+        labels = current_app.config.get('LABELS')
+
+        predictions = model.predict(img_array)
+        top_prediction_idx = np.argmax(predictions[0])
+        top_prediction_class = labels[top_prediction_idx]
+
+        return {
+            "label": top_prediction_class
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
 # ------------- CONVERT IMAGE URL TO IMAGE FILE -------------
 def url_to_image(url):
-    response = requests.get(url) 
+    response = requests.get(url)
     if response.status_code == 200:
         img_bytes = BytesIO(response.content)
         img = Image.open(img_bytes).convert('RGB')
@@ -121,6 +176,7 @@ def process_json(data):
             if (image_url or video):
                 if (image_url):
                     try:
+                        # img, encoded_img = url_to_image(image_url)
                         img, encoded_img = url_to_image(image_url)
                         post['image'] = image_url
                     except Exception as e:
@@ -141,7 +197,7 @@ def process_json(data):
                     answer = {}
 
                 answer["file"] = post.get('url', 'url not found')
-                answer["encoded_img"] = encoded_img
+                # answer["encoded_img"] = encoded_img
                 if(video):
                     answer["video"] = post.get('video')
                     answer["documentation"] = "v"
@@ -150,6 +206,7 @@ def process_json(data):
                 answer["media"] = "Facebook"
                 if post['image']!="Error getting image URL":
                     answer["documentation"] = "p"
+        print("\n\n\n")
                 
                 
         if (successful_posts/number_of_posts == 1):
@@ -171,7 +228,8 @@ def extract_data_from_HTML(txt):
     nested_classes_for_images = "x1ey2m1c xds687c x5yr21d x10l6tqk x17qophe x13vifvy xh8yej3 xl1xv1r".split()
     alternate_classes_for_images = "xz74otr x1ey2m1c xds687c x5yr21d x10l6tqk x17qophe x13vifvy xh8yej3".split()
     nested_a_classes_for_videos = "x1i10hfl x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 xe8uvvx x16tdsg8 x1hl2dhg xggy1nq x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x1n2onr6 x87ps6o x1lku1pv xjbqb8w x76ihet xwmqs3e x112ta8 xxxdfa6 x1ypdohk x1rg5ohu x1qx5ct2 x1k70j0n x1w0mnb xzueoph x1mnrxsn x1iy03kw xexx8yu x4uap5 x18d9i69 xkhd6sd x1o7uuvo x1a2a7pz".split()
-    classes_a_for_url = ["x1i10hfl", "xjbqb8w", "x1ejq31n", "xd10rxx", "x1sy0etr", "x17r0tee", "x972fbf", "xcfux6l", "x1qhh985", "xm0m39n", "x9f619", "x1ypdohk", "xt0psk2", "xe8uvvx", "xdj266r", "x11i5rnm", "xat24cr", "x1mh8g0r", "xexx8yu", "x4uap5", "x18d9i69", "xkhd6sd", "x16tdsg8", "x1hl2dhg", "xggy1nq", "x1a2a7pz", "x1heor9g", "xt0b8zv", "xo1l8bm"]
+    # classes_a_for_url = ["x1i10hfl", "xjbqb8w", "x1ejq31n", "xd10rxx", "x1sy0etr", "x17r0tee", "x972fbf", "xcfux6l", "x1qhh985", "xm0m39n", "x9f619", "x1ypdohk", "xt0psk2", "xe8uvvx", "xdj266r", "x11i5rnm", "xat24cr", "x1mh8g0r", "xexx8yu", "x4uap5", "x18d9i69", "xkhd6sd", "x16tdsg8", "x1hl2dhg", "xggy1nq", "x1a2a7pz", "x1heor9g", "xt0b8zv", "xo1l8bm"]
+    classes_a_for_url = "x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xa49m3k xqeqjp1 x2hbi6w x13fuv20 xu3j5b3 x1q0q8m5 x26u7qi x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xdl72j9 x2lah0s xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x1q0g3np x87ps6o x1lku1pv x1a2a7pz x1lliihq x1pdlv7q".split()
 
     collected_data = []
 
@@ -180,6 +238,8 @@ def extract_data_from_HTML(txt):
         found_divs = feed_div.find_all('div', class_=lambda class_: class_ and all(c in class_.split() for c in initial_classes))
 
         for div in found_divs:
+            print("INSIDE DIV:")
+            print(div)
             text = None
             nested_div_1 = div.find('div', class_=lambda class_: class_ and all(c in class_.split() for c in nested_classes_for_text))
             if nested_div_1 and nested_div_1.text:
@@ -200,8 +260,11 @@ def extract_data_from_HTML(txt):
                         entry['video'] = nested_a_video['href']
 
                     url_a_tag = div.find('a', class_=lambda class_: class_ and all(c in class_.split() for c in classes_a_for_url))
+                   
                     if url_a_tag:
                         entry['url'] = url_a_tag['href']
+                        print("\n\nURL TAG:")
+                        print(entry['url'])
 
                     collected_data.append(entry)
 
@@ -211,3 +274,8 @@ def extract_data_from_HTML(txt):
     response, status_code = process_json({"arr": collected_data})
     print(response)
     return response, status_code
+
+
+
+
+
