@@ -168,12 +168,8 @@ def process_json(data):
             if (image_url or video):
                 if (image_url):
                     try:
-<<<<<<< HEAD
                         # img, encoded_img = url_to_image(image_url)
                         img, encoded_img = url_to_image(image_url)
-=======
-                        img = url_to_image(image_url)
->>>>>>> parent of 724e210 (change linkURL to file and remove byte64)
                         post['image'] = image_url
                     except Exception as e:
                         print(f"Error getting image: {e}")
@@ -193,12 +189,8 @@ def process_json(data):
                     arr_error_posts.append(post)
                     answer = {}
 
-<<<<<<< HEAD
                 answer["file"] = post.get('url', 'url not found')
                 # answer["encoded_img"] = encoded_img
-=======
-                answer["linkURL"] = post.get('url', 'url not found')
->>>>>>> parent of 724e210 (change linkURL to file and remove byte64)
                 if(video):
                     answer["video"] = post.get('video')
                     answer["documentation"] = "v"
