@@ -5,6 +5,10 @@ import requests
 import json
 from flask import jsonify
 from flask import current_app
+import requests
+
+
+# MODELS AND RELATED
 import numpy as np
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 
@@ -59,16 +63,15 @@ def analyze_data_gemini(dive_text, img):
             model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content([f'I am giving you a text and an image about diving, {promt_instructions} the text: {dive_text}', img], stream=True)
             response.resolve()
+            print("RESPONSE:")
+            print(response.text)
         else:
-            # model = genai.GenerativeModel('gemini-pro')
-            # response = model.generate_content(f'I am giving you a text about diving, {promt_instructions} the text: {dive_text}')
-            response = json_no_images
             # model = genai.GenerativeModel('gemini-pro')
             # response = model.generate_content(f'I am giving you a text about diving, {promt_instructions} the text: {dive_text}')
             response = json_no_images
 
         cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
-        print("\nCLEANED TEXT: \n")
+        print("\nCLEANED TEXT:")
         print(cleaned_text)
 
         try:
@@ -130,6 +133,21 @@ def predict_image_class(image_url):
     except Exception as e:
         return {"error": str(e)}
 
+# ------------- MY MODEL - PREDICT SPECIE AND OBJGROUP -------------
+def get_specie_objGroup(image_url):
+    url = "https://d1e9-147-235-202-80.ngrok-free.app/predict"
+    data = {
+        "image_url": image_url
+    }
+    
+    response = requests.post(url, json=data)
+    response_data = response.json()
+    
+    # Extract and return the specie and objectGroup
+    specie = response_data.get('specie')
+    object_group = response_data.get('objectGroup')
+    
+    return specie, object_group
 
 # ------------- CONVERT IMAGE URL TO IMAGE FILE -------------
 def url_to_image(url):
@@ -186,11 +204,17 @@ def process_json(data):
                         # answer = analyze_data_gemini(text, img)
                         successful_posts += 1
                         results.append(answer)
-
                     except Exception as e:
                         print(f"Error adding post to results data: {e}")
                         arr_error_posts.append(post)
                         answer = {}
+                        
+                    try:
+                        answer['spicie'],answer['objGroup']=get_specie_objGroup(image_url)
+                    except Exception as e:
+                        print(f"Error getting predictions: {e}")
+
+
 
                     answer["file"] = post.get('url', 'url not found')
                     if(video):
