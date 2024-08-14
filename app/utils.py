@@ -36,12 +36,9 @@ genai.configure(api_key=GEMINI_KEY)
 # ------------- TEXT AND IMAGE ANALYZE - GEMINI -------------
 def analyze_data_gemini(dive_text, img):
     print("IN GEMINI")
-    json_structure = '{"date": ,"time":, "diveSite": ,"objectGroup":, "specie":, "imageLocation":, "AR":}'
+    json_structure = '{"date": ,"time":, "diveSite":, "imageLocation":, "AR":}'
     json_not_usefull = '{"no data": "No usefull data"}'
-    json_no_images = '{"no data": "No images in this post"}'
-    json_no_images = '{"no data": "No images in this post"}'
     json_no_data = '{"no data": "The post is not about diving"}'
-    json_no_israelOrSales = '{"no data": "The post is not about diving in Israel region or advertisement"}'
     json_no_israelOrSales = '{"no data": "The post is not about diving in Israel region or advertisement"}'
     parameters_explanation_before = '''date - date of the dive,
         time - light/night,
@@ -169,7 +166,7 @@ def process_json(data):
         number_of_posts = len(arr)
         successful_posts = 0
         results = []
-        answer = {}
+        
 
         if not arr:
             return jsonify({'status': 'error', 'message': 'Data Is Empty'}), 400
@@ -178,6 +175,7 @@ def process_json(data):
             return jsonify({'status': 'error', 'message': 'Wrong JSON structure, arr must be an array'}), 400
 
         for post in arr:
+            answer = {}
             try:
                 print('\n\n*************************************************')
                 print("POST:", post)
