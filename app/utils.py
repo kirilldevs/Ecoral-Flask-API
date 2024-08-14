@@ -210,19 +210,20 @@ def process_json(data):
                         answer = {}
                         
                     try:
-                        answer['specie'],answer['objGroup']=get_specie_objGroup(image_url)
+                        answer['specie'],answer['objectGroup']=get_specie_objGroup(image_url)
                     except Exception as e:
                         print(f"Error getting predictions: {e}")
 
 
 
-                    answer["file"] = post.get('url', 'url not found')
+                    # answer["file"] = post.get('url', 'url not found')
                     if(video):
                         answer["video"] = post.get('video')
                         answer["documentation"] = "v"
                         
                     answer["media"] = "Facebook"
-                    answer["image"] = post['image']
+                    answer["file"] = post['image']
+                    answer["linkURL"] = post.get('url', 'url not found')
                     if post['image']!="Error getting image URL":
                         answer["documentation"] = "p"
             except Exception as e:
