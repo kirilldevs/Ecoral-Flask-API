@@ -5,6 +5,7 @@ from flask import Flask
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Dropout
+import requests
 
 # ------------- IMPORT VIRTUAL VARIABLES -------------
 config = dotenv_values(".env")
@@ -36,9 +37,9 @@ model = Sequential([
 
 input_shape = (224, 224, 3)
 model.build(input_shape=(None, *input_shape))
-model.load_weights('../ecoralVGG16.weights.h5')
-model.summary()
-app.config['MODEL'] = model
+# model.load_weights('../ecoralVGG16.weights.h5')
+# model.summary()
+# app.config['MODEL'] = model
 app.config['LABELS'] = {
     0: 'Abudefduf vaigiensis',
     1: 'Acanthurus sohal',

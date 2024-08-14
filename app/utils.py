@@ -133,8 +133,11 @@ def predict_image_class(image_url):
 
 # ------------- CONVERT IMAGE URL TO IMAGE FILE -------------
 def url_to_image(url):
+    print("IN URL IMAGE")
+    print(url)
     response = requests.get(url)
     if response.status_code == 200:
+        print("CONVERTING URL TO IMAGE")
         img_bytes = BytesIO(response.content)
         img = Image.open(img_bytes).convert('RGB')
         return img
@@ -148,6 +151,7 @@ def process_json(data):
         number_of_posts = len(arr)
         successful_posts = 0
         results = []
+        answer = {}
 
         if not arr:
             return jsonify({'status': 'error', 'message': 'Data Is Empty'}), 400
@@ -156,65 +160,67 @@ def process_json(data):
             return jsonify({'status': 'error', 'message': 'Wrong JSON structure, arr must be an array'}), 400
 
         for post in arr:
-            print('*************************************************')
-            print("POST:", post)
-            print("IMAGE:", post['image'])
-            print('*************************************************')
- 
-            text = post.get('text', "")
-            image_url = post.get('image', False)
-            video = post.get('video', False)
+            try:
+                print('\n\n*************************************************')
+                print("POST:", post)
+                print("IMAGE:", post['image'])
+                print("TEXT:", post['text'])
+                print('*************************************************\n\n')
+    
+                text = post.get('text', "")
+                image_url = post.get('image', False)
+                print("IMAGE URL from POST post.GET", image_url)
+                video = post.get('video', False)
 
-            if (image_url or video):
-                if (image_url):
-                    try:
-                        # img, encoded_img = url_to_image(image_url)
-                        img, encoded_img = url_to_image(image_url)
-                        post['image'] = image_url
+                if (image_url or video):
+                    if (image_url):
+                        try:
+                            print("OK")
+                            img = url_to_image(image_url)
+                        except Exception as e:
+                            print(f"Error getting image: {e}")
+                    else:
+                        img = None
+
+                    try:        
+                        # answer = analyze_data_gemini(text, img)
+                        successful_posts += 1
+                        results.append(answer)
+
                     except Exception as e:
-                        print(f"Error getting image: {e}")
-                        post['image'] = "Error getting image URL"
-                else:
-                    img = None
+                        print(f"Error adding post to results data: {e}")
+                        arr_error_posts.append(post)
+                        answer = {}
 
-                try:        
-                    answer = analyze_data_gemini(text, img)
-
-
-                    successful_posts += 1
-                    results.append(answer)
-
-                except Exception as e:
-                    print(f"Error processing data: {e}")
-                    arr_error_posts.append(post)
-                    answer = {}
-
-                answer["file"] = post.get('url', 'url not found')
-                # answer["encoded_img"] = encoded_img
-                if(video):
-                    answer["video"] = post.get('video')
-                    answer["documentation"] = "v"
-                    
-                answer["image"] = post['image']
-                answer["media"] = "Facebook"
-                if post['image']!="Error getting image URL":
-                    answer["documentation"] = "p"
+                    answer["file"] = post.get('url', 'url not found')
+                    if(video):
+                        answer["video"] = post.get('video')
+                        answer["documentation"] = "v"
+                        
+                    answer["media"] = "Facebook"
+                    answer["image"] = post['image']
+                    if post['image']!="Error getting image URL":
+                        answer["documentation"] = "p"
+            except Exception as e:
+                print(post)
+                print(f"Error processing POST: {e}")
         print("\n\n\n")
                 
                 
-        if (successful_posts/number_of_posts == 1):
+        if (successful_posts/len(results) == 1):
             return jsonify({'status': 'success', 'message': 'Data processed', 'data': results, 'number of posts': successful_posts}), 200
         elif(successful_posts == 0):
-            return jsonify({'status': 'Partial_success', 'message': 'The data wasnt analyzed, you can check the posts manually.', 'Unanalyzed Posts': arr_error_posts, 'nextSteps': 'Try again in 60 seconds or Contact the admin', 'results':successful_posts/number_of_posts}), 206
+            return jsonify({'status': 'partial_success', 'message': 'The data wasnt analyzed, you can check the posts manually.', 'Unanalyzed Posts': arr_error_posts, 'nextSteps': 'Try again in 60 seconds or Contact the admin', 'results':successful_posts/number_of_posts}), 206
         else:
-            return jsonify({'status': 'partial_success', 'message': 'Some data fragments were not retrieved due to internal server errors.', 'successfulData': results, 'Unanalyzed Posts': arr_error_posts, 'nextSteps': 'try again in 60 seconds', 'results':successful_posts/number_of_posts}), 206
+            return jsonify({'status': 'artial_success', 'message': 'Some data fragments were not retrieved due to internal server errors.', 'successfulData': results, 'Unanalyzed Posts': arr_error_posts, 'nextSteps': 'try again in 60 seconds', 'results':successful_posts/number_of_posts}), 206
 
 def extract_data_from_HTML(txt):
     print("IN EXTRACT HTML")
 
     soup = BeautifulSoup(txt, 'html.parser')
 
-    feed_divs = soup.find_all('div', role="feed")
+    # feed_divs = soup.find_all('div', role="feed")
+    feed_divs = soup.find_all('div', {'data-pagelet': 'GroupFeed'})
 
     initial_classes = ["x1yztbdb", "x1n2onr6", "xh8yej3", "x1ja2u2z"]
     nested_classes_for_text = "xdj266r x11i5rnm xat24cr x1mh8g0r x1vvkbs".split()
@@ -231,16 +237,20 @@ def extract_data_from_HTML(txt):
         found_divs = feed_div.find_all('div', class_=lambda class_: class_ and all(c in class_.split() for c in initial_classes))
 
         for div in found_divs:
-            print("INSIDE DIV:")
-            print(div)
-            text = None
+            text = ""
             nested_div_1 = div.find('div', class_=lambda class_: class_ and all(c in class_.split() for c in nested_classes_for_text))
             if nested_div_1 and nested_div_1.text:
                 text = nested_div_1.text
 
+            # Find images with all classes in nested_classes_for_images
             nested_imgs = div.find_all('img', class_=lambda class_: class_ and all(c in class_.split() for c in nested_classes_for_images))
-            if not nested_imgs:  
-                nested_imgs = div.find_all('img', class_=lambda class_: class_ and all(c in class_.split() for c in alternate_classes_for_images))
+
+            # Find images with all classes in alternate_classes_for_images
+            alternate_imgs = div.find_all('img', class_=lambda class_: class_ and all(c in class_.split() for c in alternate_classes_for_images))
+
+            # Combine the results
+            nested_imgs.extend(alternate_imgs)
+
 
             for img in nested_imgs:
                 if img and img.get('src'):
@@ -256,14 +266,14 @@ def extract_data_from_HTML(txt):
                    
                     if url_a_tag:
                         entry['url'] = url_a_tag['href']
-                        print("\n\nURL TAG:")
-                        print(entry['url'])
 
                     collected_data.append(entry)
+                    
+    # ---- PRINT COLLECTED DATA ----
+    # with open('collected_data.txt', 'w') as file:
+    #     for item in collected_data:
+    #         file.write(f"{item}\n")
 
-    # with open('file.txt', 'w', encoding='utf-8') as file:
-    #     file.write(json.dumps(collected_data, ensure_ascii=False))
-            
     response, status_code = process_json({"arr": collected_data})
     print(response)
     return response, status_code
