@@ -210,7 +210,7 @@ def process_json(data):
                         answer = {}
                         
                     try:
-                        answer['spicie'],answer['objGroup']=get_specie_objGroup(image_url)
+                        answer['specie'],answer['objGroup']=get_specie_objGroup(image_url)
                     except Exception as e:
                         print(f"Error getting predictions: {e}")
 
