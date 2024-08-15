@@ -82,12 +82,12 @@ def analyze_data_gemini(dive_text, img):
         
     except BlockedPromptException as e:
         print(f"promt error: {e.msg}, at position {e.pos}")
-        json_data = json.loads('{"no data": "Some error occured 2"}')
+        json_data = json.loads('{"Google API Error": "promt error"}')
         return json_data 
     
     except Exception as e:
         print(f"some error: {str(e)}")
-        json_data = json.loads('{"no data": "Some error with GEMINI service"}')
+        json_data = json.loads('{"Google API Error": "error with GEMINI service"}')
         return json_data 
 
 # ------------- MODEL PREDICTIONS TOP 5-------------
@@ -132,7 +132,8 @@ def predict_image_class(image_url):
 
 # ------------- MY MODEL - PREDICT SPECIE AND OBJGROUP -------------
 def get_specie_objGroup(image_url):
-    url = "https://d1e9-147-235-202-80.ngrok-free.app/predict"
+    # url = "https://d1e9-147-235-202-80.ngrok-free.app/predict"
+    url = "https://21f5-147-235-202-80.ngrok-free.app/predict"
     data = {
         "image_url": image_url
     }
